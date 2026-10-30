@@ -1,0 +1,131 @@
+{
+  "schema": 1,
+  "version": "0.1.0",
+  "files": [
+    {
+      "plugin": "twitter-kol",
+      "file": "plugins/twitter-kol/kol-tweets.js",
+      "sourceRepository": "user-skills",
+      "sourcePath": "btc-kol-tracker/assets/opencli-patch/twitter/kol-tweets.js",
+      "sourceCommit": "9fef4f065db4bf6431c0a36caf12170ff2a0f8c8",
+      "sourceSha256": "091e85fcee7a8ed53113d4ba4a8a162e7ef7ff65ed744b201cdca72a78e0db48",
+      "sha256": "091e85fcee7a8ed53113d4ba4a8a162e7ef7ff65ed744b201cdca72a78e0db48",
+      "changes": [],
+      "commands": [
+        "twitter/kol-tweets"
+      ]
+    },
+    {
+      "plugin": "github-releases",
+      "file": "plugins/github-releases/releases.js",
+      "sourceRepository": "user-skills",
+      "sourcePath": "ai-tech-brief/assets/opencli/clis/github/releases.js",
+      "sourceCommit": "9fef4f065db4bf6431c0a36caf12170ff2a0f8c8",
+      "sourceSha256": "f09d74ce8b8f35ade36a70f5858964940e07814b5daec309951f70107dfd83a4",
+      "sha256": "ce1aaa2a8ad4dcc4db8ae1362c8dd7f7711d0d600546ae67c4fd6894d1d8ee3e",
+      "changes": [
+        "新增拒绝单独点号路径段校验，防止owner/repo参数被URL归一化；隔离测试发现并覆盖"
+      ],
+      "commands": [
+        "github/releases"
+      ]
+    },
+    {
+      "plugin": "audiolibrary",
+      "file": "plugins/audiolibrary/search.js",
+      "sourceRepository": "user-skills",
+      "sourcePath": "audio-library-search/assets/opencli/audiolibrary/search.js",
+      "sourceCommit": "9fef4f065db4bf6431c0a36caf12170ff2a0f8c8",
+      "sourceSha256": "eb443fff16715056c6b3d4d5b42503b01b691c46890de1f6ef4b809a1f3c6d0b",
+      "sha256": "eb443fff16715056c6b3d4d5b42503b01b691c46890de1f6ef4b809a1f3c6d0b",
+      "changes": [],
+      "commands": [
+        "audiolibrary/search",
+        "audiolibrary/categories",
+        "audiolibrary/track"
+      ]
+    },
+    {
+      "plugin": "audiolibrary",
+      "file": "plugins/audiolibrary/categories.js",
+      "sourceRepository": "user-skills",
+      "sourcePath": "audio-library-search/assets/opencli/audiolibrary/categories.js",
+      "sourceCommit": "9fef4f065db4bf6431c0a36caf12170ff2a0f8c8",
+      "sourceSha256": "c8350e3f7f437b8743efd2ce887e347fc0fba16384b9e710b52491a0ca3f041c",
+      "sha256": "c8350e3f7f437b8743efd2ce887e347fc0fba16384b9e710b52491a0ca3f041c",
+      "changes": [],
+      "commands": [
+        "audiolibrary/search",
+        "audiolibrary/categories",
+        "audiolibrary/track"
+      ]
+    },
+    {
+      "plugin": "audiolibrary",
+      "file": "plugins/audiolibrary/track.js",
+      "sourceRepository": "user-skills",
+      "sourcePath": "audio-library-search/assets/opencli/audiolibrary/track.js",
+      "sourceCommit": "9fef4f065db4bf6431c0a36caf12170ff2a0f8c8",
+      "sourceSha256": "34f6e59bed6f3c02a1edf60c19466a975334a035dcf472dfe69e836c36381441",
+      "sha256": "34f6e59bed6f3c02a1edf60c19466a975334a035dcf472dfe69e836c36381441",
+      "changes": [],
+      "commands": [
+        "audiolibrary/search",
+        "audiolibrary/categories",
+        "audiolibrary/track"
+      ]
+    },
+    {
+      "plugin": "audiolibrary",
+      "file": "plugins/audiolibrary/core.mjs",
+      "sourceRepository": "user-skills",
+      "sourcePath": "audio-library-search/assets/opencli/audiolibrary/core.mjs",
+      "sourceCommit": "9fef4f065db4bf6431c0a36caf12170ff2a0f8c8",
+      "sourceSha256": "d2783a1d3e48a11de1452623d3f37b58543c1bdad2837e9e37ad3906b176bbec",
+      "sha256": "d2783a1d3e48a11de1452623d3f37b58543c1bdad2837e9e37ad3906b176bbec",
+      "changes": [],
+      "commands": []
+    },
+    {
+      "plugin": "youtube-transcript",
+      "file": "plugins/youtube-transcript/transcript.js",
+      "sourceRepository": "private-skills",
+      "sourcePath": "web-clipping/patches/youtube-adapter/transcript.js",
+      "sourceCommit": "b8c61a405300f5abf143fdc84cee4f559ebc6556",
+      "sourceSha256": "95e9b1374c868a55adf433e692e4216fef03400d0f162a2eafc733fb5dc4843e",
+      "sha256": "35970fac577b8ae6e3623e85d8b1a18683c405d1031b44840a405804ce23dc5c",
+      "changes": [
+        "辅助模块扩展名改为.mjs，更新plugin恢复说明和来源注释；业务逻辑未改"
+      ],
+      "commands": [
+        "youtube/transcript"
+      ]
+    },
+    {
+      "plugin": "youtube-transcript",
+      "file": "plugins/youtube-transcript/utils.mjs",
+      "sourceRepository": "https://github.com/jackwener/opencli",
+      "sourceVersion": "1.8.6",
+      "sourcePath": "clis/youtube/utils.js",
+      "sourceSha256": "978e23abd1427c76e197b3253bb8ff0a0bb1c387e21a308a846ce023910207a2",
+      "sha256": "58f5f0da660cca1deb16f2e9e5699f33fd38b701bfc4a0d6ceeae2be1082ecbd",
+      "changes": [
+        "仅保留必要函数"
+      ],
+      "license": "Apache-2.0"
+    },
+    {
+      "plugin": "youtube-transcript",
+      "file": "plugins/youtube-transcript/transcript-group.mjs",
+      "sourceRepository": "https://github.com/jackwener/opencli",
+      "sourceVersion": "1.8.6",
+      "sourcePath": "clis/youtube/transcript-group.js",
+      "sourceSha256": "0b2e7056cfa877278059b09572ac3859d1574a07548241ee1ffe756b4d489ad2",
+      "sha256": "cef782cd8c14a699fa13beab3b92f6766ad73f10020b5a8fa04b688fcc9e8110",
+      "changes": [
+        "只增加来源注释及改扩展名"
+      ],
+      "license": "Apache-2.0"
+    }
+  ]
+}

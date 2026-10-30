@@ -1,0 +1,6 @@
+{
+  "name": "twitter-kol",
+  "version": "0.1.0",
+  "description": "BTC KOL只读推文抓取",
+  "opencli": ">=1.8.4 <2.1.0"
+}

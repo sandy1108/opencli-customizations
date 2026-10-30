@@ -1,0 +1,6 @@
+{
+  "name": "audiolibrary",
+  "version": "0.1.0",
+  "description": "Audio Library分类、搜索及详情",
+  "opencli": ">=1.8.4 <2.1.0"
+}
