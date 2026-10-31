@@ -7,7 +7,7 @@
 | [twitter-kol](plugins/twitter-kol/README.md) | 0.1.0 | `twitter kol-tweets` | KOL 最近推文，只读 | X 登录态 |
 | [github-releases](plugins/github-releases/README.md) | 0.1.0 | `github releases` | Releases 及发布说明 | 不需要 |
 | [audiolibrary](plugins/audiolibrary/README.md) | 0.1.0 | `audiolibrary search/categories/track` | BGM 分类、搜索、详情 | 不需要 |
-| [youtube-transcript](plugins/youtube-transcript/README.md) | 0.1.2 | `youtube transcript` | 字幕、语言优先级及兜底 | Chrome/YouTube |
+| [youtube-transcript](plugins/youtube-transcript/README.md) | 0.1.3 | `youtube transcript` | 字幕、语言优先级及兜底 | Chrome/YouTube |
 
 它们是 OpenCLI 原生插件，多插件清单在 [opencli-plugin.json](opencli-plugin.json)。不维护 OpenCLI fork，不捆绑旧宿主，不包含 Skill 的任务调度或 BTC 点赞工作流。
 

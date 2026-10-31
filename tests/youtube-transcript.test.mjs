@@ -121,3 +121,58 @@ for (const candidate of hosts) test(`youtube: ${candidate} DOM falls back to cur
     await rm(sandbox, { recursive: true, force: true });
   }
 });
+
+for (const candidate of hosts) test(`youtube: ${candidate} auto retains DOM result when requested language is unverified`, async () => {
+  const sandbox = await mkdtemp(join(tmpdir(), 'youtube-dom-language-unknown-'));
+  try {
+    const host = join(sandbox, 'host');
+    await mkdir(host);
+    await cp(join(candidate, 'dist'), join(host, 'dist'), { recursive: true });
+    await cp(join(candidate, 'package.json'), join(host, 'package.json'));
+    await symlink(join(installedHost, 'node_modules'), join(host, 'node_modules'), 'junction');
+    await cp(new URL('../plugins/youtube-transcript/', import.meta.url), join(sandbox, 'plugin'), { recursive: true });
+    await mkdir(join(sandbox, 'node_modules/@jackwener'), { recursive: true });
+    await symlink(host, join(sandbox, 'node_modules/@jackwener/opencli'), 'junction');
+    await import(`${pathToFileURL(join(sandbox, 'plugin/transcript.js')).href}?unknown-language`);
+    const { getRegistry } = await import(pathToFileURL(join(host, 'dist/src/registry-api.js')).href);
+    const command = getRegistry().get('youtube/transcript');
+
+    let domAttempts = 0;
+    const page = {
+      goto: async () => {},
+      wait: async () => {},
+      evaluate: async code => {
+        if (code.includes('document.visibilityState')) return 'visible';
+        if (code.includes('location.reload()')) return 'reloading';
+        if (code.includes('targetVideoId')) return null;
+        if (code.includes('extractJsonAssignmentFromHtml')) return { error: 'No captions available for this video' };
+        if (code.includes('function getPanel()')) {
+          domAttempts++;
+          return { rows: [{ start: 1, end: 2, text: '测试段落' }], language: null, source: 'dom' };
+        }
+        return null;
+      },
+    };
+    const diagnostics = [];
+    const originalConsoleError = console.error;
+    console.error = (...args) => diagnostics.push(args.map(String).join(' '));
+    let result;
+    try {
+      result = await command.func(page, { url: 'Z_Foiw4UTPk', source: 'auto', lang: 'zh', mode: 'raw' });
+    }
+    finally {
+      console.error = originalConsoleError;
+    }
+
+    assert.equal(domAttempts, 1, 'auto should reach DOM after language-aware paths return no segments');
+    assert.equal(result.length, 1, 'nonempty DOM output should not be discarded because its language is unknown');
+    assert.equal(result[0].text, '测试段落');
+    assert.ok(
+      diagnostics.some(message => message.includes('source=dom') && message.includes('language=unverified') && message.includes('requested=zh')),
+      'DOM result should clearly report that the requested language was not verified',
+    );
+  }
+  finally {
+    await rm(sandbox, { recursive: true, force: true });
+  }
+});

@@ -1139,7 +1139,12 @@ cli({
                 : '';
             throw new CommandExecutionError((failure?.message || 'Failed to extract transcript') + trustHint);
         }
-        if (usedSource) {
+        if (usedSource === 'dom' && !usedLanguage) {
+            // DOM面板没有可靠语言元数据；提示未验证，但不丢弃已读取到的非空段落。
+            const requestedLanguage = langInput ? ` requested=${langInput}` : '';
+            console.error(`[youtube transcript] source=dom language=unverified${requestedLanguage}`);
+        }
+        else if (usedSource) {
             console.error(`[youtube transcript] source=${usedSource}${usedLanguage ? ' language=' + usedLanguage : ''}`);
         }
         // Step 3: Fetch chapters (for grouped mode)
