@@ -24,8 +24,8 @@
     },
     "youtube-transcript": {
       "path": "plugins/youtube-transcript",
-      "description": "YouTube字幕语言与DOM/reload兜底",
-      "version": "0.1.0",
+      "description": "YouTube字幕语言、DOM优先及播放器网络兜底",
+      "version": "0.1.2",
       "opencli": ">=1.8.4 <2.1.0"
     }
   }

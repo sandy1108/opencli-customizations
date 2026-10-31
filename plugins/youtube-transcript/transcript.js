@@ -174,13 +174,18 @@ function timedtextUrlMatchesVideo(url, videoId) {
     }
 }
 
-function extractSegmentsFromNetworkCapture(entries, langPreferences, videoId) {
+function extractSegmentsFromNetworkCapture(entries, langPreferences, videoId, minTimestamp = null) {
     const payload = unwrapBrowserResult(entries);
     if (!Array.isArray(payload) || payload.length === 0)
         return { segments: [] };
     const preferences = Array.isArray(langPreferences) ? langPreferences : [];
     const candidates = [];
     for (const entry of payload) {
+        const timestamp = Number(entry?.timestamp);
+        if (entry?.captureComplete === false)
+            continue;
+        if (Number.isFinite(minTimestamp) && Number.isFinite(timestamp) && timestamp < minTimestamp)
+            continue;
         const url = String(entry?.url || '');
         if (!url.includes('/api/timedtext'))
             continue;
@@ -231,6 +236,100 @@ function extractSegmentsFromNetworkCapture(entries, langPreferences, videoId) {
     return malformed ? { error: malformed } : { segments: [] };
 }
 
+// DOM面板无段落时，要求当前播放器发出所选语言的timedtext请求，再由宿主网络捕获器读取响应。
+function createPlayerTimedtextRequestScript(videoId, langPreferences) {
+    return `(async () => {
+  const targetVideoId = ${JSON.stringify(videoId)};
+  const langPrefs = ${JSON.stringify(langPreferences)};
+  const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+  const normalize = code => String(code || '').trim().toLowerCase().replace(/_/g, '-');
+  const matches = (code, preference) => {
+    const actual = normalize(code);
+    const wanted = normalize(preference);
+    return !!actual && !!wanted && (actual === wanted || actual.startsWith(wanted + '-'));
+  };
+  const player = document.getElementById('movie_player');
+  if (!player?.getOption || !player?.setOption) return { requested: false };
+
+  const toPlayerTrack = track => {
+    if (!track?.languageCode) return null;
+    const name = track.name?.simpleText
+      || (Array.isArray(track.name?.runs) ? track.name.runs.map(run => run?.text || '').join('') : '')
+      || track.languageCode;
+    return {
+      displayName: name,
+      id: null,
+      is_default: false,
+      is_servable: false,
+      is_translateable: !!track.isTranslatable,
+      kind: track.kind || '',
+      languageCode: track.languageCode,
+      languageName: name,
+      name: '',
+      vss_id: track.vssId || ((track.kind === 'asr' ? 'a.' : '.') + track.languageCode),
+    };
+  };
+  const available = player.getOption('captions', 'tracklist');
+  const captionTracks = player.getPlayerResponse?.()
+    ?.captions?.playerCaptionsTracklistRenderer?.captionTracks;
+  const tracks = Array.isArray(available) && available.length
+    ? available
+    : (Array.isArray(captionTracks) ? captionTracks.map(toPlayerTrack).filter(Boolean) : []);
+  if (!tracks.length) return { requested: false };
+
+  let track = null;
+  const preferManual = candidates => candidates.find(item => item?.kind !== 'asr') || candidates[0];
+  for (const preference of langPrefs) {
+    track = preferManual(tracks.filter(item => matches(item?.languageCode, preference)));
+    if (track) break;
+  }
+  if (!track && langPrefs.length) return { requested: false };
+  if (!track) {
+    track = tracks.find(item => normalize(item.languageCode) === 'en' && item.kind !== 'asr')
+      || tracks.find(item => normalize(item.languageCode).startsWith('en') && item.kind !== 'asr')
+      || tracks.find(item => item.kind !== 'asr')
+      || tracks[0];
+  }
+
+  const isCurrentTimedtext = rawUrl => {
+    try {
+      const url = new URL(rawUrl, location.origin);
+      const language = normalize(url.searchParams.get('lang'));
+      return url.pathname.includes('/api/timedtext')
+        && url.searchParams.get('v') === targetVideoId
+        && url.searchParams.get('fmt') === 'json3'
+        && !!url.searchParams.get('pot')
+        && !url.searchParams.get('tlang')
+        && (!langPrefs.length || langPrefs.some(preference => matches(language, preference)))
+        && (!track?.languageCode || matches(language, track.languageCode) || matches(track.languageCode, language));
+    } catch {
+      return false;
+    }
+  };
+
+  try {
+    try { player.loadModule?.('captions'); } catch {}
+    await sleep(500);
+    const selectedTrack = { ...track };
+    delete selectedTrack.translationLanguage;
+    try { player.setOption('captions', 'track', selectedTrack); } catch {}
+    try { player.setOption('captions', 'translationLanguage', null); } catch {}
+    try { player.playVideo?.(); } catch {}
+    for (let attempt = 0; attempt < 20; attempt++) {
+      const requested = performance.getEntriesByType('resource').some(entry => isCurrentTimedtext(entry.name));
+      if (requested) {
+        await sleep(500);
+        return { requested: true, language: track.languageCode };
+      }
+      await sleep(500);
+    }
+    return { requested: false, language: track.languageCode };
+  } finally {
+    try { player.pauseVideo?.(); } catch {}
+  }
+})()`;
+}
+
 cli({
     site: 'youtube',
     name: 'transcript',
@@ -242,7 +341,7 @@ cli({
         { name: 'url', required: true, positional: true, help: 'YouTube video URL or video ID' },
         { name: 'lang', required: false, help: '字幕语言：zh（简体优先）/ zh-Hant（繁体优先）/ en 等；支持逗号分隔兜底，如 zh-Hans,zh-CN,zh' },
         { name: 'mode', required: false, default: 'grouped', help: 'Output mode: grouped (readable paragraphs) or raw (every segment)' },
-        { name: 'source', required: false, default: 'auto', help: '提取路径：auto（默认）/ api（播放器+页面数据）/ dom（仅转写文稿面板）' },
+        { name: 'source', required: false, default: 'auto', help: '提取路径：auto（默认）/ api（播放器+页面数据）/ dom（DOM优先，面板无段落时用播放器字幕网络响应兜底）' },
     ],
     // columns intentionally omitted — raw and grouped modes return different schemas,
     // so we let the renderer auto-detect columns from the data keys.
@@ -262,16 +361,23 @@ cli({
         let usedLanguage = null;
         let usedSource = null;
         let failure = null;
+        // DOM/API失败也会读取该标记，必须在播放器分支之外初始化。
+        let lowTrustEmptyResponses = false;
 
-        if (source !== 'dom') {
-            if (canCapture) {
-                try {
-                    await page.startNetworkCapture('/api/timedtext');
-                }
-                catch {
-                    // Best-effort only. The in-page capture and XML fallback still run.
+        if (canCapture) {
+            try {
+                const started = await page.startNetworkCapture('/api/timedtext');
+                if (started !== false) {
+                    // 捕获器可能复用上个页面的队列；先排空，避免旧响应进入本次解析。
+                    await page.readNetworkCapture();
                 }
             }
+            catch {
+                // Best-effort only. The in-page capture and XML fallback still run.
+            }
+        }
+
+        if (source !== 'dom') {
             await page.goto(watchUrl, { waitUntil: 'none' });
             await page.wait(3);
             // 后台窗口里 visibilityState 可能是 hidden 但播放器仍能工作，这里只做
@@ -565,7 +671,7 @@ cli({
     `;
             const isLowTrustPayload = (payload) => !!payload && !Array.isArray(payload) && payload.empty === true;
             let playerPayload = unwrapBrowserResult(await page.evaluate(playerScript));
-            let lowTrustEmptyResponses = isLowTrustPayload(playerPayload);
+            lowTrustEmptyResponses = isLowTrustPayload(playerPayload);
             if (lowTrustEmptyResponses) {
                 // 拿到了 timedtext URL 但响应全是空 body，是低信任文档的确定信号。
                 // reload 重建文档后重试一次；attempts=0（播放器根本没发请求）不重试，
@@ -815,9 +921,11 @@ cli({
         if (!segments && source !== 'api') {
             await page.goto(watchUrl, { waitUntil: 'none' });
             await page.wait(2);
+            await ensurePageVisible(page);
             // 这里的同标签页导航同样会产出低信任文档；不 reload，面板触发的
             // get_transcript 会一直 400，转写段永远渲染不出来。
             await reloadWatchDocument(page);
+            await ensurePageVisible(page);
             const domResult = unwrapBrowserResult(await page.evaluate(`
       (async () => {
         const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
@@ -971,6 +1079,51 @@ cli({
             else if (domResult?.error) {
                 const debug = domResult.debug ? ' debug=' + JSON.stringify(domResult.debug) : '';
                 failure = failure || { type: 'error', message: domResult.error + debug };
+            }
+
+            if (!segments && canCapture) {
+                try {
+                    // DOM失败后重新开始定向捕获，避免旧视频或翻译轨的网络记录参与兜底。
+                    try {
+                        const started = await page.startNetworkCapture('/api/timedtext');
+                        if (started !== false) {
+                            // 保留未完成条目可避免捕获器等待悬挂响应；完成的旧条目会被排空。
+                            await page.readNetworkCapture({ retainIncomplete: true });
+                        }
+                    }
+                    catch {
+                        // 捕获器不可用时保留原DOM诊断，不阻断命令。
+                    }
+                    await ensurePageVisible(page);
+                    const fallbackStartedAt = Date.now();
+                    await page.evaluate(createPlayerTimedtextRequestScript(videoId, langPreferences));
+                    let captured = { segments: [] };
+                    // readNetworkCapture保留未完成响应；短轮询只接受本次完整请求结果。
+                    for (let attempt = 0; attempt < 24; attempt++) {
+                        captured = extractSegmentsFromNetworkCapture(
+                            await page.readNetworkCapture({ retainIncomplete: true }),
+                            langPreferences,
+                            videoId,
+                            fallbackStartedAt,
+                        );
+                        if (captured.error || captured.segments.length > 0)
+                            break;
+                        await page.wait(0.25);
+                    }
+                    if (captured.error) {
+                        throw new CommandExecutionError(captured.error);
+                    }
+                    if (captured.segments.length > 0) {
+                        segments = captured.segments;
+                        usedLanguage = captured.language || null;
+                        usedSource = 'network';
+                    }
+                }
+                catch (err) {
+                    if (err instanceof CommandExecutionError)
+                        throw err;
+                    // 网络兜底是尽力路径；失败时保留转写面板的原始错误。
+                }
             }
         }
 

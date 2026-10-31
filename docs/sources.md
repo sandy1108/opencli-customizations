@@ -19,7 +19,7 @@ Audio原测试迁入`tests/audio.test.mjs`，仅调整仓库路径及宿主定�
 
 ## 许可边界
 
-来源两个Skill仓库根目录未发现统一LICENSE，不能据此替用户选择MIT或Apache等整仓库许可。本仓库自有及许可未声明的部分暂为UNLICENSED，不额外授予公开使用权；这是发布前待决事项，不妨碍用户已授权的本地集中管理。
+来源两个Skill仓库根目录未发现统一LICENSE，不能据此推断或选择MIT或Apache等整仓库许可。本仓库自有及许可未声明的部分暂为UNLICENSED，不额外授予公开使用权；整仓公开许可仍需仓库所有者确认。
 
 字幕实现注明基于OpenCLI 1.8.6；相应第三方部分及辅助模块遵循上游Apache-2.0，完整文本在`LICENSES/OpenCLI-Apache-2.0.txt`，保留上游版权与现有来源注释。transcript-group原注释提及由Defuddle移植与简化，保留该来源，不声称本仓库原创。详见`THIRD_PARTY_NOTICES.md`。
 

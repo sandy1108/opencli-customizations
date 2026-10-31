@@ -1,13 +1,13 @@
 # OpenCLI 自定义扩展
 
-把分散在 Skill 附件里的 OpenCLI 扩展集中管理，运行目录可以从本仓库重建。当前版本 `0.1.0`，第一阶段代码已完成；发布记录见Git历史。尚未安装到正式环境或升级宿主。
+把分散在 Skill 附件里的 OpenCLI 扩展集中管理，运行目录可以从本仓库重建。各插件独立维护版本，宿主兼容范围与验证记录见[兼容性矩阵](docs/compatibility.md)。
 
-| 插件 | 命令 | 用途 | 浏览器 |
-|---|---|---|---|
-| [twitter-kol](plugins/twitter-kol/README.md) | `twitter kol-tweets` | KOL 最近推文，只读 | X 登录态 |
-| [github-releases](plugins/github-releases/README.md) | `github releases` | Releases 及发布说明 | 不需要 |
-| [audiolibrary](plugins/audiolibrary/README.md) | `audiolibrary search/categories/track` | BGM 分类、搜索、详情 | 不需要 |
-| [youtube-transcript](plugins/youtube-transcript/README.md) | `youtube transcript` | 字幕、语言优先级及兜底 | Chrome/YouTube |
+| 插件 | 版本 | 命令 | 用途 | 浏览器 |
+|---|---|---|---|---|
+| [twitter-kol](plugins/twitter-kol/README.md) | 0.1.0 | `twitter kol-tweets` | KOL 最近推文，只读 | X 登录态 |
+| [github-releases](plugins/github-releases/README.md) | 0.1.0 | `github releases` | Releases 及发布说明 | 不需要 |
+| [audiolibrary](plugins/audiolibrary/README.md) | 0.1.0 | `audiolibrary search/categories/track` | BGM 分类、搜索、详情 | 不需要 |
+| [youtube-transcript](plugins/youtube-transcript/README.md) | 0.1.2 | `youtube transcript` | 字幕、语言优先级及兜底 | Chrome/YouTube |
 
 它们是 OpenCLI 原生插件，多插件清单在 [opencli-plugin.json](opencli-plugin.json)。不维护 OpenCLI fork，不捆绑旧宿主，不包含 Skill 的任务调度或 BTC 点赞工作流。
 
@@ -30,7 +30,7 @@ OpenCLI自带`plugin install`，支持GitHub子插件和本地单插件目录。
 
 ## 从这里开始
 
-需要 Node.js 20+，已有 OpenCLI。当前开发环境 Node 24；不需要 `npm install`，运行时依赖通过软链接引用当前宿主的 registry/errors。
+需要 Node.js 20+ 和 OpenCLI。不需要 `npm install`；安装工具会为目标宿主链接 registry/errors 运行依赖。
 
 ```bash
 # 默认只读检查所有插件及旧clis覆盖，不执行opencli、不访问网站
@@ -60,7 +60,7 @@ npm run test:host
 node scripts/host-smoke.mjs /path/to/opencli-package /path/to/existing/node_modules
 ```
 
-- [兼容性矩阵](docs/compatibility.md)：1.8.4、1.8.6、2.0.2真实模块隔离验证；正式站点未验收。
+- [兼容性矩阵](docs/compatibility.md)：1.8.4、1.8.6、2.0.2模块隔离证据及字幕网络回退的适用边界；逐项标注真实站点验证范围。
 - [来源与许可](docs/sources.md)、[sources.json](sources.json)：来源提交、迁移前后SHA-256及改动。
 - [第一阶段报告](docs/S1-report.md)：实际交付、测试及限制。
 - [Agent规则](AGENTS.md)、[S1技术计划](docs/plans/S1.md)：后续Agent入口。

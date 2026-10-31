@@ -8,7 +8,7 @@
 | 1.8.6 | 通过 | 通过 | 通过 | 通过 | 未执行 |
 | 2.0.2 | 通过 | 通过 | 通过 | 通过 | 未执行 |
 
-测试在当前Mac的Node 24.18.0进行。待测宿主使用公开npm包的dist模块，依赖只读复用当前1.8.6安装中的node_modules；不是每个版本的完整独立依赖安装，也不是老Mac系统验收。官方层用哨兵模拟，用户层与插件层调用真实discovery。没有启动main/daemon，没有访问X/YouTube/GitHub/Audio真实站点。
+测试使用公开npm包的`dist`模块和真实plugin discovery；宿主导出层用哨兵隔离，插件层调用真实注册函数。依赖目录为测试进程只读复用，因此不是每个宿主版本的独立依赖安装，也不代表真实站点或特定操作系统验收。
 
 manifest声明`>=1.8.4 <2.1.0`为当前预期接口范围，工具拒绝范围外、未知及预发布版本；范围内未列版本仍未实测。`moduleTested`只表示本矩阵已有模块证据；`businessVerified`固定为false，本工具不颁发正式业务认证。
 
@@ -22,26 +22,29 @@ manifest声明`>=1.8.4 <2.1.0`为当前预期接口范围，工具拒绝范围�
 | validate/verify/init等收敛 | 采用`adapter init/test/check`，按目标版本核对help |
 | Electron/external Hub移除 | 本仓库六命令不依赖它们，外部Skill仍需单独核查 |
 
-`scripts/contracts.mjs`有旧/新JSON与list纯解析器；不在此阶段改写任何Skill消费者。旧BTC/Audio检查器及下载版OpenCLI Skill仍有旧约定，由S2处理。
+`scripts/contracts.mjs`提供旧/新JSON与list纯解析器。Skill消费者和机器安装状态独立维护；本仓库的兼容声明不自动代表任一消费者工作流已完成适配。
 
 ## 已知升级风险
 
-2.0.2的`fetch-adapters.js`会按官方站点哈希变化整目录清理`~/.opencli/clis/<site>`。前期两机分析命中twitter、youtube、_shared；这是源码预测，不是本次执行升级的结果。本仓库放在plugins范围，可避开该版本的清理路径，不保证将来宿主永远不改。
+2.0.2的`fetch-adapters.js`在特定官方站点更新条件下可能清理`~/.opencli/clis/<site>`用户覆盖。这是安装脚本行为，实际受目标版本及站点哈希影响。本仓库使用`plugins`目录，避开已知的`clis`清理路径；不保证后续宿主版本永远保持此行为。
 
 宿主升级可能改变registry/errors、浏览器Page API、依赖链接、站点鉴权、输出结构。1.8.x需要安装工具重链接到新宿主；2.0.2发现代码也会重绑定插件依赖。本仓库不复制旧宿主。
 
-## S3/S4正式验收门槛（尚未执行）
+## YouTube DOM与播放器字幕网络回退
 
-1. 固定版本、设备和目标插件集合；备份运行覆盖、配置及相关恢复依赖，记录哈希。
-2. 旧宿主上安装选定plugin，确认同名覆盖、注册、宿主链接与旧Skill可用。
-3. 固定版升级后重复检查；PUBLIC分类/搜索/详情、GitHub releases有限真实读取。
-4. BTC有限只读推文抓取；不触发点赞或定时工作流。已有官方twitter like是消费者依赖，不算本仓库额外命令。
-5. 字幕覆盖中文/英文/无字幕/DOM路径、reload及错误路径。历史低信任文档触发的reload分支尚未完整真实验收，本次迁移不消除这个限制。
-6. 用匹配版本Skill核对输出和检查器，成功后再按授权发布；老Mac独立验证，不沿用当前Mac结论。
+YouTube转写文稿面板可能因页面或会话状态返回`FAILED_PRECONDITION`，而播放器字幕轨仍可用。该站点响应本身不能单独证明OpenCLI接口发生breaking change；插件的网络兜底用于处理面板没有渲染字幕段、播放器仍有当前语言字幕轨的情况。
 
-失败时停止下一阶段，保留外置备份和差异；按已获批恢复方案处理，不自动删除旧附件。
+`youtube-transcript` 0.1.2中，`--source=dom`先读取转写面板。面板无段落时，插件再请求当前视频播放器选定语言的timedtext轨，并从网络捕获结果回退。过滤器要求视频ID精确匹配、字幕语言符合偏好、排除带`tlang`的自动翻译轨；输出中的`source=dom`或`source=network`表示实际返回路径。捕获不可用或没有匹配字幕时保留面板错误，不将其他视频或语言的内容当作结果。
 
-## 重现命令
+这一行为修正针对DOM面板为空的路径；播放器低信任空响应后的reload条件、超时边界、无字幕结果和其他站点业务需分别按下方测试范围核验，不由该修复自动证明。
+
+### OpenCLI 2.0.2窗口模式说明
+
+OpenCLI 2.0.2的adapter默认窗口模式为`background`，除非命令覆盖；当前字幕命令没有声明`defaultWindowMode`。DOM读取依赖YouTube描述区和转写面板渲染，后台页面的计时器或懒加载可能延迟这段流程。在2.0.2上使用DOM路径时，可显式传`--window foreground`。插件不强制改变宿主窗口默认模式，以免未告知调用方就前置浏览器窗口。
+
+模块回归覆盖播放器网络兜底的选择和过滤逻辑。模块测试不等于任意视频的站点级保证；字幕面板、播放器轨道及浏览器窗口状态仍会影响真实结果。
+
+## 复现命令
 
 ```bash
 npm test
@@ -49,3 +52,5 @@ node scripts/host-smoke.mjs /path/to/version-package /path/to/existing/node_modu
 # 多版本npm测试：值为待测包目录的JSON数组，不触发下载
 OPENCLI_TEST_HOSTS='["/path/to/1.8.4/package","/path/to/1.8.6/package","/path/to/2.0.2/package"]' npm test
 ```
+
+真实站点回归必须单独记录宿主版本、输入语言、实际来源和段数；不要把宿主安装目录、机器名、备份路径、浏览器资料或凭据放入此仓库。设备安装快照属于外部运维记录。
