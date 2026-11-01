@@ -176,3 +176,57 @@ for (const candidate of hosts) test(`youtube: ${candidate} auto retains DOM resu
     await rm(sandbox, { recursive: true, force: true });
   }
 });
+
+
+// 页面初次未发现字幕并不能覆盖后续真实提取错误；成功DOM结果由上方回归继续保护。
+for (const candidate of hosts) test(`youtube: ${candidate} early empty preserves later DOM error`, async (t) => {
+  const sandbox = await mkdtemp(join(tmpdir(), 'youtube-empty-diagnostic-'));
+  try {
+    const host = join(sandbox, 'host');
+    await mkdir(host);
+    await cp(join(candidate, 'dist'), join(host, 'dist'), { recursive: true });
+    await cp(join(candidate, 'package.json'), join(host, 'package.json'));
+    await symlink(join(installedHost, 'node_modules'), join(host, 'node_modules'), 'junction');
+    await cp(new URL('../plugins/youtube-transcript/', import.meta.url), join(sandbox, 'plugin'), { recursive: true });
+    await mkdir(join(sandbox, 'node_modules/@jackwener'), { recursive: true });
+    await symlink(host, join(sandbox, 'node_modules/@jackwener/opencli'), 'junction');
+    await import(pathToFileURL(join(sandbox, 'plugin/transcript.js')).href);
+    const { getRegistry } = await import(pathToFileURL(join(host, 'dist/src/registry-api.js')).href);
+    const command = getRegistry().get('youtube/transcript');
+    for (const source of ['api', 'auto']) {
+      await t.test(source, async () => {
+        let captionLookups = 0;
+        let domAttempts = 0;
+        const page = {
+          goto: async () => {}, wait: async () => {},
+          evaluate: async code => {
+            if (code.includes('document.visibilityState')) return 'visible';
+            if (code.includes('location.reload()')) return 'reloading';
+            if (code.includes('targetVideoId')) return null;
+            if (code.includes('extractJsonAssignmentFromHtml')) {
+              captionLookups++;
+              return { error: 'No captions available for this video' };
+            }
+            if (code.includes('function getPanel()')) {
+              domAttempts++;
+              return { error: '字幕诊断桩：面板等待超时', debug: { panels: [] } };
+            }
+            return null;
+          },
+        };
+        await assert.rejects(command.func(page, { url: 'Z_Foiw4UTPk', source, lang: 'zh', mode: 'raw' }), error => {
+          assert.equal(error.code, source === 'api' ? 'EMPTY_RESULT' : 'COMMAND_EXEC');
+          if (source === 'auto') {
+            assert.match(error.message, /面板等待超时/);
+            assert.match(error.message, /panels/);
+          }
+          return true;
+        });
+        assert.equal(captionLookups, 1);
+        assert.equal(domAttempts, source === 'api' ? 0 : 1);
+      });
+    }
+  } finally {
+    await rm(sandbox, { recursive: true, force: true });
+  }
+});

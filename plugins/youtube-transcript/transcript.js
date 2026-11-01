@@ -1078,7 +1078,11 @@ cli({
             }
             else if (domResult?.error) {
                 const debug = domResult.debug ? ' debug=' + JSON.stringify(domResult.debug) : '';
-                failure = failure || { type: 'error', message: domResult.error + debug };
+                // 初次未发现字幕不是最终结论；不能让empty遮盖后续DOM提取错误。
+                // 更早已有具体错误时仍保留它，成功的DOM/网络结果继续按原路径返回。
+                if (!failure || failure.type === 'empty') {
+                    failure = { type: 'error', message: domResult.error + debug };
+                }
             }
 
             if (!segments && canCapture) {
@@ -1129,10 +1133,8 @@ cli({
 
         if (!segments || segments.length === 0) {
             if (failure?.type === 'empty') {
-                // "No captions available" 是合法 empty 数据条件（作者没开字幕 + YT 没自动生成），
-                // 与 bilibili subtitle 的 EmptyResultError 同模式。下游应按 code EMPTY_RESULT 跳过
-                // 重试和 softFail 计数。其它 error（HTTP / parse / 短暂空响应）仍按 fetch 失败抛。
-                throw new EmptyResultError('youtube transcript', '该视频没有字幕（作者未开启 + 无自动字幕）。');
+                // 只有没有后续具体错误时保留空结果；当前路径未发现字幕不等于全站无字幕证明。
+                throw new EmptyResultError('youtube transcript', '当前提取路径未发现可用字幕；仍需区分视频无字幕与页面加载或访问状态影响。');
             }
             const trustHint = lowTrustEmptyResponses
                 ? '（播放器拿到的 timedtext 全为 0 字节，属低信任文档特征；已 reload 重试 1 次仍失败，建议稍后重跑）'

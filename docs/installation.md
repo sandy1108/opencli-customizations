@@ -6,7 +6,7 @@
 
 ### Skill独立入口
 
-`runtime_client.py`是客户端唯一源码；同步完整副本为各消费者的`plugin_client.py`：BTC、Audio、AI简报在`scripts/`，字幕在`patches/youtube-adapter/`。维护时同步四份并校验字节相同，不手工分叉；插件源码与安装事务仍只在中央维护。无需另装常驻管理服务。
+`runtime_client.py`是客户端唯一源码；同步完整副本为各消费者的`plugin_client.py`：BTC、Audio、AI简报和字幕均在各自Skill的`scripts/`。维护时同步四份并校验字节相同，不手工分叉；插件源码与安装事务仍只在中央维护。无需另装常驻管理服务。
 
 - 默认`check`离线核对本机收据/哈希/manifest版本/宿主，`remoteChecked=false`；无需源码、网络、Git或Node命令执行。
 - `matching`只表示本机自洽；不能证明远端最新、来源可信、命令来源或业务成功。最低版本不足为`version-too-old`，宿主变化为`host-relink`，未知修改/原生lock为`conflict`。

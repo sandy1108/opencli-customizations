@@ -11,6 +11,8 @@ YouTube面板没有可靠的语言元数据：DOM返回非空段落时，即使�
 
 OpenCLI 2.0.2默认以后台窗口运行adapter。YouTube转写面板依赖页面渲染，使用`--source=dom`时建议加`--window foreground`；插件目前不强制切换窗口模式。验证边界见根目录[兼容性说明](../../docs/compatibility.md)。
 
+0.1.4只修正诊断分类：播放器/页面先返回未发现字幕，随后DOM提取失败时，返回带DOM诊断的`COMMAND_EXEC`，不再被早期`EMPTY_RESULT`遮盖。没有后续具体错误的空结果仍返回`EMPTY_RESULT`；它表示当前路径未取得字幕，不是视频绝对无字幕的证明。成功DOM/网络结果与提取顺序不变。
+
 低信任文档触发reload分支仍需按具体场景验证。模块加载通过不能证明每段视频有字幕，也不能证明浏览器恢复分支已触发。没有字幕时报告失败，不虚构转写。
 
 在仓库根执行`node scripts/manage.mjs check --plugin youtube-transcript`，预览用`install --plugin youtube-transcript`；实际写入加`--apply`须已有设备变更授权。`adapter reset youtube`不会卸载本插件，恢复见根docs/installation.md。源码基于OpenCLI，许可见根第三方声明。

@@ -93,12 +93,13 @@
       "sourcePath": "web-clipping/patches/youtube-adapter/transcript.js",
       "sourceCommit": "b8c61a405300f5abf143fdc84cee4f559ebc6556",
       "sourceSha256": "95e9b1374c868a55adf433e692e4216fef03400d0f162a2eafc733fb5dc4843e",
-      "sha256": "0d54ff243acf604add2bfdb424d5d3ae051541453de89c202836dec2b213ceda",
+      "sha256": "4c9e4a4cd429b0c989b9157dd7d746b4d1671f75236a6652cfce92bb9b8ff8a7",
       "changes": [
         "辅助模块扩展名改为.mjs，更新plugin恢复说明和来源注释；业务逻辑未改",
         "0.1.1：将lowTrustEmptyResponses提升至命令函数作用域，保留DOM/auto/api失败的原始类型化诊断；不改提取算法",
         "0.1.2：DOM面板无段落时请求当前视频及语言对应的播放器timedtext响应；排空旧捕获、忽略未完成响应并过滤旧视频与翻译轨，记录实际来源",
-        "0.1.3：DOM返回非空字幕但语言未知时保留结果，并在stderr提示language=unverified及请求语言；不改变取数路由"
+        "0.1.3：DOM返回非空字幕但语言未知时保留结果，并在stderr提示language=unverified及请求语言；不改变取数路由",
+        "0.1.4：API初次empty不再遮盖后续DOM具体错误；保留API空结果与成功DOM/网络路径，空结果提示不再断言视频绝对无字幕"
       ],
       "commands": [
         "youtube/transcript"

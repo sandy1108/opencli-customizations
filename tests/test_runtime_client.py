@@ -35,6 +35,9 @@ class RuntimeTests(unittest.TestCase):
             else:
                 shutil.copyfile(source, self.repo / name)
 
+    def candidate_version(self):
+        return json.loads((REPO / 'plugins/youtube-transcript/opencli-plugin.json').read_text())['version']
+
     def check(self):
         return client.inspect_installed('youtube-transcript', runtime=self.runtime, host_package=self.host)
 
@@ -60,7 +63,7 @@ class RuntimeTests(unittest.TestCase):
         with mock.patch.dict(os.environ, {'OPENCLI_CUSTOMIZATIONS_ROOT': '/nonexistent/old/source'}), mock.patch.object(client.subprocess, 'run', side_effect=AssertionError('cannot execute')):
             report = self.check()
         self.assertEqual('matching', report['plugins'][0]['status'])
-        self.assertEqual('0.1.3', report['plugins'][0]['version'])
+        self.assertEqual(self.candidate_version(), report['plugins'][0]['version'])
         self.assertFalse(report['remoteChecked'])
 
     def test_tampered_plugin_conflicts_before_download(self):
@@ -82,7 +85,9 @@ class RuntimeTests(unittest.TestCase):
 
     def test_minimum_version_is_checked_without_remote_fetch(self):
         self.install()
-        with mock.patch.dict(client.MINIMUM, {'youtube-transcript': '0.1.4'}):
+        major, minor, patch = map(int, self.candidate_version().split('.'))
+        higher_version = f'{major}.{minor}.{patch + 1}'
+        with mock.patch.dict(client.MINIMUM, {'youtube-transcript': higher_version}):
             self.assertEqual('version-too-old', self.check()['plugins'][0]['status'])
 
     def test_local_candidate_change_also_requires_update_consent(self):
