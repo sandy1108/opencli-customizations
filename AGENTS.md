@@ -8,6 +8,7 @@
 - `opencli-plugin.json`：原生monorepo清单；每组有自己的manifest与package.json。
 - `sources.json`：来源提交、原始/当前哈希及迁移差异。代码改动后审查再更新当前哈希；不能为绕过冲突随意改收据。
 - `scripts/manage.mjs`：默认只读，显式定向安装，复制快照、外置备份、失败恢复。不操作npm，不升级宿主，不改原生lock。
+- `scripts/runtime_client.py`：随Skill分发的独立客户端唯一源码；检查不需要仓库，下载前先征得用户同意，获准后临时获取源码并清理。修改后同步BTC/Audio/AI简报/字幕四份plugin_client.py并核对哈希；运行`npm run test:runtime`。正式机不保留开发检出或ROOT依赖。
 - `scripts/contracts.mjs`：1.x/2.x JSON及list解析；调用方负责分页。
 - `scripts/host-smoke.mjs`、`tests/host-worker.mjs`：临时目录中的真实模块测试，禁止改正式HOME；不启动main/daemon、不访问网站。
 

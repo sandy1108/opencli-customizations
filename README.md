@@ -28,9 +28,26 @@
 
 OpenCLI自带`plugin install`，支持GitHub子插件和本地单插件目录。本项目优先使用下方的安全安装工具，以获得预览、冲突保护和外置备份；它仍使用OpenCLI原生加载机制。两种安装方式的命令及边界见[安装说明](docs/installation.md#与原生管理的关系)，不要交叉管理同一插件。
 
+## 正式机不保留源码仓库
+
+开发机保留Git仓库；正式机只保留`~/.opencli/plugins/<id>/`安装快照和正式Skill。安装复制文件，只链接全局OpenCLI宿主，不链接临时源码。
+
+Skill附带`scripts/runtime_client.py`的独立副本（在消费者中命名`plugin_client.py`）：默认离线核对本机收据、文件、最低插件版本和宿主，不依赖仓库、不读取`OPENCLI_CUSTOMIZATIONS_ROOT`。`matching`不代表最新远端版本、来源可信或真实业务已验收。
+
+缺插件时，Agent必须先说明插件、用途、GitHub来源及安装目标，向用户请求下载和安装同意并等待。获准后入口才临时clone固定来源的master、确认提交、预检并调用安全安装器；完成或异常后清理本次临时检出，事务备份保留。更新/重链接另获许可；无人确认的定时任务停止并报告，不自动下载。
+
+```bash
+# 使用Skill附带的客户端，不是在正式机克隆仓库
+python3 -B <skill-dir>/scripts/plugin_client.py check --plugin github-releases
+# 仅用户明确同意下载和安装后执行
+python3 -B <skill-dir>/scripts/plugin_client.py install --plugin github-releases --allow-download
+```
+
+安装后复查命令发现和定义，成功后重试原操作一次；未知冲突或宿主不兼容停止，不自动重装、升级宿主或重启。断电/强制终止可能留下临时目录，核实归属后再清理。详见[安装说明](docs/installation.md)。
+
 ## 从这里开始
 
-需要 Node.js 20+ 和 OpenCLI。不需要 `npm install`；安装工具会为目标宿主链接 registry/errors 运行依赖。
+开发与安装需要 Node.js 20+ 和 OpenCLI，独立Skill客户端需要 Python 3.9+。不需要 `npm install`；安装工具会为目标宿主链接 registry/errors 运行依赖。
 
 ```bash
 # 默认只读检查所有插件及旧clis覆盖，不执行opencli、不访问网站
@@ -54,6 +71,7 @@ node scripts/manage.mjs install --plugin audiolibrary --apply
 
 ```bash
 npm test
+npm run test:runtime
 # 对当前宿主做模块级隔离测试，不运行CLI main/daemon
 npm run test:host
 # 对已经取得的其他版本包测试；不会下载、安装或升级
